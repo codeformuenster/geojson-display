@@ -7,19 +7,19 @@
       <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
       <link rel="apple-touch-icon-precomposed" href="images/apple-touch-icon.png">
       <link rel="stylesheet" href="/css/c4m.css">
+      <script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
+
+      <!-- uikit -->
       <link rel="stylesheet" href="/uikit/css/uikit.gradient.min.css">
       <link rel="stylesheet" href="/uikit/css/tooltip.gradient.min.css">
-      <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
       <script src="/uikit/js/uikit.min.js"></script>
       <script src="/uikit/js/tooltip.js"></script>
 
-                  <link rel="stylesheet" href="/lib/leaflet.css" />
-
-                                    <link rel="stylesheet" href="/lib/leaflet.draw.css" />
-
-                  <script src="/lib/leaflet.js"></script>
-
-                	<script src="/lib/leaflet.draw.js"></script>
+      <!-- leaflet -->
+      <link rel="stylesheet" href="/lib/leaflet.css" />
+      <link rel="stylesheet" href="/lib/leaflet.draw.css" />
+      <script src="/lib/leaflet.js"></script>
+    	<script src="/lib/leaflet.draw.js"></script>
 
       <style>
       #fileUrl {
@@ -64,10 +64,10 @@
 
 
 
-        <!-- leaflet map example -->
+        <!-- main objects -->
         <div  class="uk-grid"  data-uk-grid-margin>
           <div class="uk-width-medium-8-10">
-            <input id="fileUrl" name="fileUrl" type="text" value="https://raw.githubusercontent.com/codeformuenster/open-data/master/stimmbezirke.geojson"
+            <input id="fileUrl" name="fileUrl" type="text" value="https://raw.githubusercontent.com/codeformuenster/open-data/master/spielplaetze.geojson"
             placeholder="Enter url to GEOJSON file" class="uk-form uk-form-large">
           </div>
           <div class="uk-width-medium-2-10">
@@ -76,162 +76,14 @@
 
 
           <div class="uk-width-medium-1-1">
+            <div id="filesOnServer">
+            </div>
 
             <div id="map" style="height:500px">
             </div>
 
             <div id="fileList">
             </div>
-
-            <script>
-
-
-              (function() {
-                  var noMoreEdit = 0;
-
-                  // generate map
-                  var map = L.map('map').setView([51.505, -0.09], 13);
-
-                  L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-                      attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-                  }).addTo(map);
-
-                  L.marker([51.5, -0.09]).addTo(map)
-                      .bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
-                      .openPopup();
-
- // https://raw.githubusercontent.com/codeformuenster/open-data/master/stimmbezirke.geojson
-// https://raw.githubusercontent.com/codeformuenster/open-data/master/spielplaetze.geojson
-// https://crossorigin.me/http://www.metropia.com/cities.geojson
-
-
-
-
-                  var GeoList = function() {
-
-                    var files = [];
-                    var filecounter = 0;
-
-                    $( "#fileList" ).click(function( event ) {
-                        console.log( "clicked: ", event.target );
-                        var ele = $(event.target);
-                        var layerId = ele.data('id');
-                        if (ele.hasClass('layerClick')) {
-                          files[layerId].show = 1 - files[layerId].show ;
-                          var myLayer = files[layerId].layer;
-                          if ( files[layerId].show) {
-                            ele.css('opacity','');
-                            map.addLayer(myLayer);
-                          } else {
-                            map.removeLayer(myLayer);
-                            ele.css('opacity','0.5');
-                          }
-                        }
-                        else if (ele.hasClass('layerEdit')) {
-                          var myLayer = files[layerId].layer;
-                          map.addLayer(myLayer);
-                          showDrawControls(myLayer);
-                        }
-                    });
-
-                    return {
-                      addFile: function(json, layer) {
-                        var fileId = ++filecounter;
-                        files[fileId] = { id: fileId, name: json, show: 1, layer:layer };
-                        $('#fileList').append('<div class="layerClick" data-id="' + fileId + '">'
-                          +'<input data-id="' + fileId + '" type="button" class="layerEdit uk-button uk-button-condensed" value="edit" /> ' + json + '</div>');
-                        if (noMoreEdit) {
-                          $('.layerEdit').hide();
-                        }
-                      }
-                    }
-                  }();
-
-
-                  function showDrawControls(drawnItems) {
-
-                        noMoreEdit = 1;
-                        $('.layerEdit').hide();
-                    		var drawControl = new L.Control.Draw({
-                    			draw: {
-                    				position: 'topleft',
-                    				polygon: {
-                    					title: 'Draw a sexy polygon!',
-                    					allowIntersection: false,
-                    					drawError: {
-                    						color: '#b00b00',
-                    						timeout: 1000
-                    					},
-                    					shapeOptions: {
-                    						color: '#bada55'
-                    					},
-                    					showArea: true
-                    				},
-                    				polyline: {
-                    					metric: false
-                    				},
-                    				circle: {
-                    					shapeOptions: {
-                    						color: '#662d91'
-                    					}
-                    				}
-                    			},
-                    			edit: {
-                    				featureGroup: drawnItems
-                    			}
-                    		});
-                    		map.addControl(drawControl);
-
-                        map.on('draw:created', function (e) {
-                          var type = e.layerType,
-                            layer = e.layer;
-
-                          if (type === 'marker') {
-                            layer.bindPopup('A popup!');
-                          }
-
-                          drawnItems.addLayer(layer);
-                        });
-                  }
-
-                  // load remote json data
-                  //
-                  function showJson( url ) {
-                    $.getJSON( url, {
-                    })
-                    .done(function( data ) {
-                        console.log("got data", data);
-
-                        var latLon = data.features[0].geometry.coordinates[0][0] ? data.features[0].geometry.coordinates[0][0] : data.features[0].geometry.coordinates;
-                        console.log(latLon);
-                        map.setView([latLon[1], latLon[0]], 13)
-
-                        var myStyle = {
-                            "color": "#ff7800",
-                            "weight": 5,
-                            "opacity": 0.65
-                        };
-                        var myLayer = L.geoJson(data, {
-                            style: myStyle
-                        });
-                        map.addLayer(myLayer);
-                        GeoList.addFile(url, myLayer);
-                      });
-
-                    }
-
-
-                    $('#goButton').click(function() {
-                      var file =  $('#fileUrl').val()
-                        showJson( file );
-                    })
-
-                })();
-
-            </script>
-
-
-
 
           </div>
 
@@ -296,6 +148,13 @@
 
             </div>
         </div>
+
+        <!-- our stuff -->
+        <script src="/js/geo_map.js"></script>
+        <script src="/js/geo_object.js"></script>
+        <script src="/js/json_server.js"></script>
+        <script src="/js/main.js"></script>
+
 
     </body>
 
