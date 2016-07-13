@@ -13,11 +13,13 @@
       <script src="/uikit/js/uikit.min.js"></script>
       <script src="/uikit/js/tooltip.js"></script>
 
-                  <!-- link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
-                  <script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script -->
-
                   <link rel="stylesheet" href="/lib/leaflet.css" />
+
+                                    <link rel="stylesheet" href="/lib/leaflet.draw.css" />
+
                   <script src="/lib/leaflet.js"></script>
+
+                	<script src="/lib/leaflet.draw.js"></script>
 
       <style>
       #fileUrl {
@@ -64,12 +66,12 @@
 
         <!-- leaflet map example -->
         <div  class="uk-grid"  data-uk-grid-margin>
-          <div class="uk-width-medium-9-10">
+          <div class="uk-width-medium-8-10">
             <input id="fileUrl" name="fileUrl" type="text" value="https://raw.githubusercontent.com/codeformuenster/open-data/master/stimmbezirke.geojson"
             placeholder="Enter url to GEOJSON file" class="uk-form uk-form-large">
           </div>
-          <div class="uk-width-medium-1-10">
-            <input id="goButton" type="button" value="Go" class="uk-button uk-button-primary uk-button-large" />
+          <div class="uk-width-medium-2-10">
+            <input id="goButton" type="button" value="Zur Karte hinzufügen" class="uk-button uk-button-primary uk-button-large" />
           </div>
 
 
@@ -85,6 +87,7 @@
 
 
               (function() {
+                  var noMoreEdit = 0;
 
                   // generate map
                   var map = L.map('map').setView([51.505, -0.09], 13);
@@ -99,6 +102,7 @@
 
  // https://raw.githubusercontent.com/codeformuenster/open-data/master/stimmbezirke.geojson
 // https://raw.githubusercontent.com/codeformuenster/open-data/master/spielplaetze.geojson
+// https://crossorigin.me/http://www.metropia.com/cities.geojson
 
 
 
@@ -111,8 +115,8 @@
                     $( "#fileList" ).click(function( event ) {
                         console.log( "clicked: ", event.target );
                         var ele = $(event.target);
+                        var layerId = ele.data('id');
                         if (ele.hasClass('layerClick')) {
-                          var layerId = ele.data('id');
                           files[layerId].show = 1 - files[layerId].show ;
                           var myLayer = files[layerId].layer;
                           if ( files[layerId].show) {
@@ -123,17 +127,72 @@
                             ele.css('opacity','0.5');
                           }
                         }
+                        else if (ele.hasClass('layerEdit')) {
+                          var myLayer = files[layerId].layer;
+                          map.addLayer(myLayer);
+                          showDrawControls(myLayer);
+                        }
                     });
 
                     return {
                       addFile: function(json, layer) {
                         var fileId = ++filecounter;
                         files[fileId] = { id: fileId, name: json, show: 1, layer:layer };
-                        console.log("files", files);
-                        $('#fileList').append('<div class="layerClick" data-id="' + fileId + '">' + json + '</div>')
+                        $('#fileList').append('<div class="layerClick" data-id="' + fileId + '">'
+                          +'<input data-id="' + fileId + '" type="button" class="layerEdit uk-button uk-button-condensed" value="edit" /> ' + json + '</div>');
+                        if (noMoreEdit) {
+                          $('.layerEdit').hide();
+                        }
                       }
                     }
                   }();
+
+
+                  function showDrawControls(drawnItems) {
+
+                        noMoreEdit = 1;
+                        $('.layerEdit').hide();
+                    		var drawControl = new L.Control.Draw({
+                    			draw: {
+                    				position: 'topleft',
+                    				polygon: {
+                    					title: 'Draw a sexy polygon!',
+                    					allowIntersection: false,
+                    					drawError: {
+                    						color: '#b00b00',
+                    						timeout: 1000
+                    					},
+                    					shapeOptions: {
+                    						color: '#bada55'
+                    					},
+                    					showArea: true
+                    				},
+                    				polyline: {
+                    					metric: false
+                    				},
+                    				circle: {
+                    					shapeOptions: {
+                    						color: '#662d91'
+                    					}
+                    				}
+                    			},
+                    			edit: {
+                    				featureGroup: drawnItems
+                    			}
+                    		});
+                    		map.addControl(drawControl);
+
+                        map.on('draw:created', function (e) {
+                          var type = e.layerType,
+                            layer = e.layer;
+
+                          if (type === 'marker') {
+                            layer.bindPopup('A popup!');
+                          }
+
+                          drawnItems.addLayer(layer);
+                        });
+                  }
 
                   // load remote json data
                   //
@@ -183,7 +242,9 @@
 
         <hr class="uk-grid-divider wider">
 
-
+                  <div class="uk-width-medium-1-1">
+        If you get errors when accessing remote files, please try to prepend your url with "https://crossorigin.me/".
+        </div>
 
 
     </div>
